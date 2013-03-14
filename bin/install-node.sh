@@ -102,7 +102,6 @@ setup_ask() {
 }
 
 # Setup basic variables
-
 thisDir=$(abspath_cd "$(dirname "$0")")
 case "$thisDir" in
     */bin) destDir=${thisDir%/*};;
@@ -110,9 +109,16 @@ case "$thisDir" in
 esac
 
 # Check OS
-if [[ "$OSTYPE" != "linux-gnu" ]]; then
-    die "Currently only Linux is supported"
-fi
+runCScript=
+case "$OSTYPE" in
+    linux-gnu) ;;
+    msys|cygwin)
+        # Windows run install-node.vbs if available
+        [ -e "$thisDir/install-node.vbs" ] || die "Download and run install-node.vbs"
+        runCScript=yes
+        ;;
+    *) die "$OSTYPE OS is not supported."
+esac
 
 # Process command line arguments
 nodeVersion=0.10.0
@@ -139,7 +145,7 @@ options :
 EOF
             exit 0
 	    ;;
-        -a*) 
+        -a*)
 	    nodeArch=${1:2}
 	    shift
 	    ;;
@@ -169,6 +175,11 @@ case "$nodeArch" in
     x86|32) nodeArch=x86;;
     *) die "Unsupported architecture: $nodeArch";;
 esac
+
+if [[ "$runCScript" == "yes" ]]; then
+    echo "Executing: cscript //NoLogo \"$thisDir/install-node.vbs\" //version:\"$nodeVersion\" //arch:\"$nodeArch\""
+    exec cscript //NoLogo "$thisDir/install-node.vbs" //version:"$nodeVersion" //arch:"$nodeArch"
+fi
 
 # Setup paths
 nodePrefix="node-v${nodeVersion}-linux-${nodeArch}"

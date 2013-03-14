@@ -26,8 +26,7 @@
 'SOFTWARE.
 
 ' Declare all global variables
-Dim FSO, WshShell, WshEnv, THIS_DIR
-Dim VERBOSE, LAUNCHER, LAUNCHER_OPTIONS
+Dim FSO, WshShell, WshEnv, thisDir, VERBOSE
 
 ' Create objects that will be shared by all following code
 Set FSO = CreateObject("Scripting.FileSystemObject")
@@ -36,10 +35,15 @@ Set WshEnv = WshShell.Environment("PROCESS")
 Set stdout = FSO.GetStandardStream(1)
 Set stderr = FSO.GetStandardStream(2)
 
-THIS_DIR = FSO.GetParentFolderName(Wscript.ScriptFullName)
+thisDir = FSO.GetParentFolderName(Wscript.ScriptFullName)
+If UCase(Right(thisDir, 4)) = "\BIN" Then
+    baseDir = Left(thisDir, Len(thisDir)-4)
+Else
+    baseDir = thisDir
+End If
 
-' Check THIS_DIR for existence
-Assert FSO.FolderExists(THIS_DIR), "Bootstrap: There is no directory " & THIS_DIR & ", something is wrong"
+' Check thisDir for existence
+Assert FSO.FolderExists(thisDir), "Bootstrap: There is no directory " & thisDir & ", something is wrong"
 
 ' Set VERBOSE to True if we Wscript.Echo will print to console
 VERBOSE = InConsole()
@@ -94,12 +98,13 @@ Else
     nodeURL = "http://nodejs.org/dist/" & "v" & nodeVersion & "/x64/" & nodeMSIFile
 End If
 
-nodeBaseDir = "share\nodejs"
+nodeBaseDirRel = "share\nodejs" 'relative to baseDir
+nodeBaseDir = FSO.BuildPath(baseDir, nodeBaseDirRel)
 nodeMSIPath = FSO.GetAbsolutePathName(FSO.BuildPath(nodeBaseDir, nodeMSIFile))
-nodeInstallPathRel = nodeBaseDir & "\" & nodePrefix
-nodeInstallPath = FSO.GetAbsolutePathName(nodeInstallPathRel)
+nodeInstallPathRel = nodeBaseDirRel & "\" & nodePrefix ' relative to baseDir
+nodeInstallPath = FSO.GetAbsolutePathName(FSO.BuildPath(baseDir, nodeInstallPathRel))
 
-Wscript.Echo "I will download and install locally node.js version: " & nodeVersion & " for architecture: " & nodeArch
+Wscript.Echo "Download and install locally node.js version: " & nodeVersion & " for architecture: " & nodeArch
 
 ' Download node.js
 CreateFolderTree(nodeBaseDir)
@@ -142,7 +147,7 @@ End If
 
 ' Create node launch script
 Dim Script
-scriptFile = FSO.BuildPath(THIS_DIR, nodePrefix & ".bat")
+scriptFile = FSO.BuildPath(baseDir, nodePrefix & ".bat")
 Set script = FSO.CreateTextFile(scriptFile, True)
 script.WriteLine("@echo off")
 script.WriteLine("PATH %~dp0" & nodeExePathRel & ";%PATH%")
@@ -153,7 +158,7 @@ Echo "Created node launch script: " & scriptFile
 ' Create git bash launch script
 gitShell = GetMsysGitShell()
 If gitShell <> "" Then
-    scriptFile = FSO.BuildPath(THIS_DIR, "git-bash-" & nodePrefix & ".bat")
+    scriptFile = FSO.BuildPath(baseDir, "git-bash-" & nodePrefix & ".bat")
     Set script = FSO.CreateTextFile(scriptFile, True)
     script.WriteLine("@echo off")
     script.WriteLine("PATH %~dp0" & nodeExePathRel & ";%PATH%")
