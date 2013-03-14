@@ -30,7 +30,7 @@
 export LC_ALL=C
 unset CDPATH
 
-abspath_cd() {
+abspath() {
     if [ -d "$1" ]; then
         echo "$(cd "$1"; pwd)"
     else
@@ -102,10 +102,10 @@ setup_ask() {
 }
 
 # Setup basic variables
-thisDir=$(abspath_cd "$(dirname "$0")")
+thisDir=$(abspath "$(dirname "$0")")
 case "$thisDir" in
-    */bin) destDir=${thisDir%/*};;
-	*) destDir=$thisDir;;
+    */bin) baseDir=${thisDir%/*};;
+	*) baseDir=$thisDir;;
 esac
 
 # Check OS
@@ -186,15 +186,78 @@ nodePrefix="node-v${nodeVersion}-linux-${nodeArch}"
 nodeTarballFile="${nodePrefix}.tar.gz"
 nodeURL="http://nodejs.org/dist/v${nodeVersion}/${nodeTarballFile}"
 
-nodeBaseDir="$destDir/share/nodejs"
-nodeTarballPath=$(abspath_cd "$nodeBaseDir/$nodeTarballFile")
-#nodeInstallPathRel = nodeBaseDir & "\" & nodePrefix
-#nodeInstallPath = FSO.GetAbsolutePathName(nodeInstallPathRel)
+nodeBaseDirRel=share/nodejs # relative to baseDir
+nodeBaseDir=$(abspath "$baseDir/$nodeBaseDirRel")
+nodeTarballPath=$(abspath "$nodeBaseDir/$nodeTarballFile")
+nodeInstallPathRel=$nodeBaseDirRel/$nodePrefix
+nodeInstallPath=$(abspath "$baseDir/$nodeInstallPathRel")
 
-echo "I will download and install locally node.js version: $nodeVersion for architecture: $nodeArch"
+echo "Download and install locally node.js version: $nodeVersion for architecture: $nodeArch"
 
+# Download node.js
 mkdir -p "$nodeBaseDir" || die "Could not create $nodeBaseDir directory"
+if [[ ( ! -e "$nodeTarballPath" ) || ( "$forceInstall" == "yes" ) ]]; then
+    download "$nodeURL" "$nodeTarballPath" || \
+        die "Could not download URL: $nodeURL"
+else
+    echo "File $nodeTarballPath already exists, use --force to reload"
+fi
 
-# Download and extract
+# Extract node.js
 
-download "$nodeURL" "$nodeTarballPath" || die "Could not download URL: $nodeURL"
+type -p tar > /dev/null || die "Could not find tar tool, please install first"
+
+nodeExePath=$nodeInstallPath/bin
+nodeExePathRel=$nodeInstallPathRel/bin
+nodeExeFile=$nodeExePath/node
+nodeExeFileRel=$nodeExePathRel/node
+
+if [[ ( ! -e "$nodeExeFile" ) || ( "$forceInstall" == "yes" ) ]]; then
+    [[ -d "$nodeInstallPath" ]] && {
+        echo "Deleting directory: $nodeInstallPath"
+        rm -rf "$nodeInstallPath"
+    }
+
+    echo "Running: cd $nodeBaseDir && tar xzf \"$nodeTarballPath\""
+
+    (cd "$nodeBaseDir" || exit 1; tar xzf "$nodeTarballPath")
+    result=$?
+    echo "Result: $result"
+    if [[ "$result" != 0 ]]; then
+        die "Could not install node.js"
+    fi
+else
+    echo "File $nodeExeFile already exists, use --force to reinstall."
+fi
+
+# Create node launch script
+
+scriptFile="$baseDir/$nodePrefix"
+cat > "$scriptFile" <<EOF
+#!/bin/sh
+THIS_DIR=\`dirname "\$0"\`
+NODE_PATH=\$THIS_DIR/$nodeExePathRel
+PATH=\$NODE_PATH:\$PATH
+export PATH
+exec "\$NODE_PATH/node" "\$@"
+EOF
+chmod +x "$scriptFile"
+echo "Created node launch script: $scriptFile"
+
+# Create bash launch script
+scriptFile="$baseDir/bash-$nodePrefix"
+cat > "$scriptFile" <<EOF
+#!/bin/bash
+THIS_DIR=\`dirname "\$0"\`
+NODE_PATH=\$THIS_DIR/$nodeExePathRel
+PATH=\$NODE_PATH:\$PATH
+export PATH
+if [[ ! -e "\$THIS_DIR/share/git-bash-profile.sh" ]]; then
+    mkdir -p "\$THIS_DIR/share"
+    echo "[ -e /etc/profile ] && source /etc/profile" > "\$THIS_DIR/share/git-bash-profile.sh"
+    echo "echo Started Node Environment" >> "\$THIS_DIR/share/git-bash-profile.sh"
+fi
+exec bash --rcfile "\$THIS_DIR/share/git-bash-profile.sh"
+EOF
+chmod +x "$scriptFile"
+echo "Created bash launch script: $scriptFile"
