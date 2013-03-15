@@ -232,13 +232,19 @@ fi
 
 # Create node launch script
 
+funcText=$(declare -f abspath)
+
 scriptFile="$baseDir/$nodePrefix"
 cat > "$scriptFile" <<EOF
-#!/bin/sh
-THIS_DIR=\`dirname "\$0"\`
+#!/bin/bash
+
+# Utility functions
+$funcText
+
+THIS_DIR=\$(abspath \$(dirname "\$0"))
 NODE_PATH=\$THIS_DIR/$nodeExePathRel
 PATH=\$NODE_PATH:\$PATH
-export PATH
+export PATH NODE_PATH
 exec "\$NODE_PATH/node" "\$@"
 EOF
 chmod +x "$scriptFile"
@@ -248,13 +254,18 @@ echo "Created node launch script: $scriptFile"
 scriptFile="$baseDir/bash-$nodePrefix"
 cat > "$scriptFile" <<EOF
 #!/bin/bash
-THIS_DIR=\`dirname "\$0"\`
+
+# Utility functions
+$funcText
+
+THIS_DIR=\$(abspath \$(dirname "\$0"))
 NODE_PATH=\$THIS_DIR/$nodeExePathRel
 PATH=\$NODE_PATH:\$PATH
-export PATH
+export PATH NODE_PATH
 if [[ ! -e "\$THIS_DIR/share/git-bash-profile.sh" ]]; then
     mkdir -p "\$THIS_DIR/share"
     echo "[ -e /etc/profile ] && source /etc/profile" > "\$THIS_DIR/share/git-bash-profile.sh"
+    echo "[ -e \\"\\\$NODE_PATH/../lib/node_modules/npm/lib/utils/completion.sh\\" ] && source \\"\\\$NODE_PATH/../lib/node_modules/npm/lib/utils/completion.sh\\"" >> "\$THIS_DIR/share/git-bash-profile.sh"
     echo "echo Started Node Environment" >> "\$THIS_DIR/share/git-bash-profile.sh"
 fi
 exec bash --rcfile "\$THIS_DIR/share/git-bash-profile.sh"

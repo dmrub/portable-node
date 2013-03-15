@@ -151,6 +151,7 @@ scriptFile = FSO.BuildPath(baseDir, nodePrefix & ".bat")
 Set script = FSO.CreateTextFile(scriptFile, True)
 script.WriteLine("@echo off")
 script.WriteLine("PATH %~dp0" & nodeExePathRel & ";%PATH%")
+script.WriteLine("set NODE_PATH=%~dp0" & nodeExePathRel)
 script.WriteLine("%~dp0" & nodeExeFileRel & " %*")
 script.Close
 Echo "Created node launch script: " & scriptFile
@@ -162,6 +163,7 @@ If gitShell <> "" Then
     Set script = FSO.CreateTextFile(scriptFile, True)
     script.WriteLine("@echo off")
     script.WriteLine("PATH %~dp0" & nodeExePathRel & ";%PATH%")
+    script.WriteLine("set NODE_PATH=%~dp0" & nodeExePathRel)
     script.WriteLine("if not exist %~dp0\share\git-bash-profile.sh (")
     script.WriteLine("  mkdir %~dp0\share")
     script.WriteLine("  echo source /etc/profile > %~dp0\share\git-bash-profile.sh")
