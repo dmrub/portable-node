@@ -164,10 +164,14 @@ If gitShell <> "" Then
     script.WriteLine("@echo off")
     script.WriteLine("PATH %~dp0" & nodeExePathRel & ";%PATH%")
     script.WriteLine("set NODE_PATH=%~dp0" & nodeExePathRel)
-    script.WriteLine("if not exist %~dp0\share\git-bash-profile.sh (")
-    script.WriteLine("  mkdir %~dp0\share")
-    script.WriteLine("  echo source /etc/profile > %~dp0\share\git-bash-profile.sh")
-    script.WriteLine(")")
+    script.WriteLine("rem if exist %~dp0\share\git-bash-profile.sh goto run")
+    script.WriteLine("rem Create git-bash-profile.sh")
+    script.WriteLine("if not exist %~dp0\share mkdir %~dp0\share")
+    script.WriteLine("echo source /etc/profile > %~dp0\share\git-bash-profile.sh")
+    script.WriteLine("echo NODE_PATH=$^(echo ""$NODE_PATH"" ^| sed 's^|^^\(.\):\\^|/\1/^|g; s^|\\^|/^|g';^) >> %~dp0\share\git-bash-profile.sh")
+    script.WriteLine("echo [ -e ""$NODE_PATH/node_modules/npm/lib/utils/completion.sh"" ] ^&^& source ""$NODE_PATH/node_modules/npm/lib/utils/completion.sh"" >> %~dp0\share\git-bash-profile.sh")
+    script.WriteLine("echo echo Started Node Evironment >> %~dp0\share\git-bash-profile.sh")
+    script.WriteLine(":run")
     script.WriteLine("""" & gitShell & """ --rcfile %~dp0\share\git-bash-profile.sh")
     script.Close
 
