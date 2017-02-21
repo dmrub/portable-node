@@ -2,10 +2,10 @@
 
 # Portable Node.js install script
 # Author: Dmitri Rubinstein
-# Version: 1.0
-# 13.03.2013
+# Version: 1.1
+# 2017-02-21
 #
-#Copyright (c) 2013
+#Copyright (c) 2013, 2017
 #              DFKI - German Research Center for Artificial Intelligence
 #              www.dfki.de
 #
@@ -66,12 +66,12 @@ fi
 
 if type -p curl > /dev/null; then
     download() {
-	echo "Download: $2 to: $1"
-	curl -o "$2" "$1" && [ -e "$2" ]
+	echo "Download: $1 to: $2"
+	curl -fLo "$2" "$1" && [ -e "$2" ]
     }
 elif type -p wget > /dev/null; then
     download() {
-	echo "Download: $2 to: $1"
+	echo "Download: $1 to: $2"
 	wget -O "$2" "$1" && [ -e "$2" ]
     }
 else
@@ -121,7 +121,7 @@ case "$OSTYPE" in
 esac
 
 # Process command line arguments
-nodeVersion=0.10.0
+nodeVersion=6.9.5
 if [[ "$HOSTTYPE" == "x86_64" ]]; then
     nodeArch=x64
 else

@@ -53,7 +53,7 @@ Set args = Wscript.Arguments
 
 Dim nodeVersion, nodeArch, nodeURL, nodeMSIFile
 
-nodeVersion = "0.10.0"
+nodeVersion = "6.9.5"
 nodeArch = "x86"
 forceInstall = False
 
