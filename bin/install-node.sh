@@ -121,7 +121,7 @@ case "$OSTYPE" in
 esac
 
 # Process command line arguments
-nodeVersion=6.9.5
+nodeVersion=12.18.3
 if [[ "$HOSTTYPE" == "x86_64" ]]; then
     nodeArch=x64
 else
